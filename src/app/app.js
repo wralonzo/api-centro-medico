@@ -14,5 +14,6 @@ app.use(require('../controllers/UsuarioController'));
 app.use(require('../controllers/PacienteController'));
 app.use(require('../controllers/EspecialidadController'));
 app.use(require('../controllers/MedicoController'));
+app.use(require('../controllers/CitasController'));
 
 module.exports = app;

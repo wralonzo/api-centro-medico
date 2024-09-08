@@ -2,12 +2,11 @@ const { Router } = require("express");
 
 const router = Router();
 
-const Paciente = require("../models/Paciente");
 const verifyToken = require("./VerifyToken");
 const Cita = require("../models/Cita");
 
 // ENDPOINT - REGISTER
-router.post("/cita/register", verifyToken, async (req, res, next) => {
+router.post("/cita/register", async (req, res, next) => {
   try {
     const payload = req.body;
     console.log(payload);
@@ -20,7 +19,7 @@ router.post("/cita/register", verifyToken, async (req, res, next) => {
 });
 
 // ENDPOINT - UPDATE
-router.put("/cita/update/:id", verifyToken, async (req, res, next) => {
+router.put("/cita/update/:id", async (req, res, next) => {
   try {
     const payload = req.body;
     const param = req.params;
@@ -39,17 +38,17 @@ router.put("/cita/update/:id", verifyToken, async (req, res, next) => {
 });
 
 // ENDPOINT - UPDATE
-router.delete("/cita/delete/:id", verifyToken, async (req, res, next) => {
+router.delete("/cita/delete/:id", async (req, res, next) => {
   try {
     const param = req.params;
-    const citaEliminada = await Paciente.findByPk(param.id);
+    const citaEliminada = await Cita.findByPk(param.id);
     if (!citaEliminada) {
       return res.status(404).send("Cita no encontrado");
     }
-    if (!citaEliminada.estado) {
+    if (!citaEliminada.delete) {
       return res.status(400).send("la ya ha sido dado de baja");
     }
-    await citaEliminada.update({ estado: false });
+    const pacienteEliminado = await citaEliminada.update({ delete: 0 });
     return res.status(200).json(pacienteEliminado);
   } catch (error) {
     console.error("Error al eliminar paciente:", error);
@@ -58,7 +57,7 @@ router.delete("/cita/delete/:id", verifyToken, async (req, res, next) => {
 });
 
 // ENDPOINT - LIST
-router.get("/cita/list", verifyToken, async (req, res, next) => {
+router.get("/cita", async (req, res, next) => {
   try {
     const { page = 1, limit = 10 } = req.query;
     const numericLimit = parseInt(limit, 10);
@@ -68,7 +67,7 @@ router.get("/cita/list", verifyToken, async (req, res, next) => {
       where: { estado: true },
     });
     const pacientes = await Cita.findAll({
-      where: { estado: true },
+      where: { delete: 1 },
       limit: numericLimit,
       offset: offset,
     });
@@ -86,10 +85,10 @@ router.get("/cita/list", verifyToken, async (req, res, next) => {
 });
 
 // ENDPOINT - FIND_BY_ID
-router.get("/cita/:id", verifyToken, async (req, res, next) => {
+router.get("/cita/:id", async (req, res, next) => {
   try {
     const { id } = req.params;
-    const paciente = await Paciente.findByPk(id);
+    const paciente = await Cita.findByPk(id);
     if (!paciente.estado) {
       return res.status(404).send("Paciente no encontrado");
     }

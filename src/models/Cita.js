@@ -66,6 +66,10 @@ const Cita = sequelize.define(
       type: DataTypes.ENUM("CONFIRMADA", "PENDIENTE", "CANCELADA"),
       allowNull: false,
     },
+    delete: {
+      type: DataTypes.INTEGER,
+      defaultValue: 1,
+    },
   },
   {
     freezeTableName: true,

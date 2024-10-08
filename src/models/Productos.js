@@ -12,8 +12,6 @@ const sequelize = new Sequelize(
   }
 );
 
-const Paciente = require("./Paciente");
-
 sequelize
   .authenticate()
   .then(() => console.log("Conexión establecida con la base de datos."))
@@ -21,28 +19,28 @@ sequelize
     console.error("Error al conectar con la base de datos: ", error)
   );
 
-const Ficha = sequelize.define(
-  "ficha",
+const Productos = sequelize.define(
+  "producto",
   {
     id: {
       type: DataTypes.INTEGER,
       primaryKey: true,
       autoIncrement: true,
     },
-    paciente_id: {
-      type: DataTypes.INTEGER,
-      allowNull: false,
-      references: {
-        model: Paciente,
-        key: "id",
-      },
-    },
-    pdf: {
-      type: DataTypes.STRING(100),
-      allowNull: false,
-    },
-    nota: {
+    nombre: {
       type: DataTypes.TEXT,
+      allowNull: false,
+    },
+    precio: {
+      type: DataTypes.REAL,
+      allowNull: false,
+    },
+    existencia: {
+      type: DataTypes.REAL,
+      allowNull: false,
+    },
+    fechaVencimiento: {
+      type: DataTypes.DATE,
       allowNull: false,
     },
     estado: {
@@ -55,11 +53,9 @@ const Ficha = sequelize.define(
   }
 );
 
-Ficha.belongsTo(Paciente, { foreignKey: "paciente_id" });
-
 sequelize
   .sync()
-  .then(() => console.log("Tabla ficha creada"))
+  .then(() => console.log("Tabla productos creada"))
   .catch((error) => console.error("Error", error));
 
-module.exports = Ficha;
+module.exports = Productos;

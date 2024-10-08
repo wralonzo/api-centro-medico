@@ -4,6 +4,11 @@ const router = Router();
 
 const verifyToken = require("./VerifyToken");
 const Cita = require("../models/Cita");
+const Paciente = require("../models/Paciente");
+const Medico = require("../models/Medico");
+const Usuario = require("../models/Usuario");
+const Especialidad = require("../models/Especialidad");
+const PDFDocument = require("pdfkit");
 
 // ENDPOINT - REGISTER
 router.post("/cita/register", async (req, res, next) => {
@@ -96,6 +101,114 @@ router.get("/cita/:id", async (req, res, next) => {
   } catch (error) {
     console.error("Error al obtener el paciente por ID:", error);
     res.status(500).send("Error interno del servidor");
+  }
+});
+function formatFechaEspanol(fecha) {
+  return new Intl.DateTimeFormat("es-ES", { dateStyle: "long" }).format(fecha);
+}
+router.get("/cita/paciente/pdf/:id", async (req, res, next) => {
+  const pacienteId = req.params.id;
+
+  // Crea un nuevo documento PDF
+  const doc = new PDFDocument({ margin: 30 });
+
+  // Configura los encabezados para mostrar el PDF en el navegador
+  res.setHeader("Content-Type", "application/pdf");
+  res.setHeader(
+    "Content-Disposition",
+    `inline; filename=reporte_citas_paciente_${pacienteId}.pdf`
+  );
+
+  // Enviar el documento directamente a la respuesta
+  doc.pipe(res);
+
+  try {
+    // Obtén el paciente y sus citas de la base de datos
+    const paciente = await Paciente.findByPk(pacienteId);
+    const citas = await Cita.findAll({
+      where: { paciente_id: pacienteId },
+      include: [
+        {
+          model: Medico,
+          include: [
+            {
+              model: Usuario,
+              attributes: [
+                "nombre",
+                "apellido",
+                "direccion",
+                "telefono",
+                "fecha_nacimiento",
+                "dpi",
+              ],
+            },
+            {
+              model: Especialidad,
+              attributes: ["nombre"],
+            },
+          ],
+        },
+      ],
+    });
+
+    // Título del reporte
+    doc.fontSize(20).text(`Reporte de Citas - Paciente: ${paciente.nombre}`, {
+      align: "center",
+    });
+    doc.moveDown(2); // Espacio después del título
+
+    if (citas.length === 0) {
+      doc.text("No hay citas registradas para este paciente.", {
+        align: "center",
+      });
+    } else {
+      // Definir encabezados de la tabla
+      const tableTop = 150;
+      const itemHeight = 20;
+
+      // Dibujar encabezados de la tabla
+      doc.fontSize(12);
+      doc.text("ID", 40, tableTop);
+      doc.text("Fecha", 75, tableTop);
+      doc.text("Hora Entrada", 220, tableTop);
+      doc.text("Hora Salida", 300, tableTop);
+      doc.text("Médico", 400, tableTop);
+      doc.text("Estado", 500, tableTop);
+
+      doc
+        .moveTo(40, tableTop + 15)
+        .lineTo(575, tableTop + 15)
+        .stroke();
+
+      // Dibujar las citas en la tabla
+      let position = tableTop + 30;
+      citas.forEach((cita) => {
+        doc.text(cita.id, 40, position);
+        doc.text(formatFechaEspanol(cita.fecha), 65, position); // Convertir fecha a español
+        doc.text(cita.hora_entrada, 220, position);
+        doc.text(cita.hora_salida, 300, position);
+        doc.text(
+          `${cita.medico.usuario.nombre} ${cita.medico.usuario.apellido}`, // Acceso al nombre del médico desde el usuario
+          400,
+          position
+        ); // Asume que el médico tiene un campo "nombre"
+        doc.text(cita.estado, 500, position);
+
+        // Dibujar línea separadora entre filas
+        doc
+          .moveTo(40, position + 15)
+          .lineTo(575, position + 15)
+          .stroke();
+
+        position += itemHeight; // Incrementar posición para la siguiente fila
+      });
+    }
+
+    // Finaliza el documento
+    doc.end();
+  } catch (error) {
+    console.error("Error al generar el reporte:", error);
+    res.status(500).send("Error al generar el reporte.");
   }
 });
 
